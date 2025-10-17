@@ -10,4 +10,4 @@ class Historico:
     print('Transações:')
     for t in self.transacoes:
       print('-', t)
-    print('-----------------------------------') 
+    print('-----------------------------------')

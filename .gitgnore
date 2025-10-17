@@ -1,0 +1,4 @@
+# Ignorar aquivos de configuração que não devem  ser comitados
+.env
+#Ignora todos os diterorios _pycache_
+_pycache_
