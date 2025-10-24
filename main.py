@@ -2,7 +2,7 @@
 # Revisão de Orientação a Objetos
 
 
-
+'''
 from conta import Conta
 from cliente import Cliente
 from funcionario.ifrn.empresa.config.database import SupabaseConnection
@@ -105,6 +105,8 @@ print(conta1.saldo*1.1 + conta2.saldo*0.9)
   #  print('Tá liso')
 
 """
+
+
 
 
 # Aula 12/092023 - Listas e Funções Lambda
