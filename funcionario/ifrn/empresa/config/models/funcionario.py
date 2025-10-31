@@ -24,7 +24,7 @@ class Funcionario:
     #JSON (dict) --> Funcionario
     def from_dict(self, data) -> 'Funcionario':
         return Funcionario(
-            data,get('cpf'),
+            data.get('cpf'),
             data.get('pnome'),
             data.get('unome'),
             data.get('data_nasc'),

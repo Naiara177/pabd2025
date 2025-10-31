@@ -1,51 +1,76 @@
-## Programação com Acesso a Banco de Dados
-# Revisão de Orientação a Objetos
+from empresa.config.database import SupabaseConnection
+from empresa.dao.funcionario_dao import FuncionarioDAO
 
+client = SupabaseConnection().client
 
-'''
+# Criando DAO para acessar a tabela funcionario
+funcionario_dao = FuncionarioDAO(client)
+
+for funcionario in funcionario_dao.read_all():
+  print(funcionario)
+
+"""
 from conta import Conta
 from cliente import Cliente
-from funcionario.ifrn.empresa.config.database import SupabaseConnection
+from empresa.config.database import SupabaseConnection
+from funcionario.controle_de_bonificacoes import ControleDeBonificacoes
+# from funcionario.funcionario import Funcionario
+from funcionario.gerente import Gerente
+from ifrn.pessoa import Pessoa
+from ifrn.funcionario import Funcionario
 
-# Definição da classe Funcionario
-class Funcionario:
-    def __init__(self, nome, cpf, salario):
-        self.nome = nome
-        self.cpf = cpf
-        self.salario = salario
+# Aula 17/10 - Polimorfismo, Classes Abstratas, Supabase
 
-#Aula 17/10 - polimorfismo, sobrescrita de métodos, supabase 
-# Placeholder for Supabase connection; replace with a real connection/instantiation when available
-connection = SupabaseConnection()
-clent = connection.client
+client = SupabaseConnection().client
+
+# pessoa = Pessoa('Guilherme', '111.222.333-44')
+# print(pessoa)
+
+# f = Funcionario('Guilherme', '111.222.333-44', '1886519')
+# print(f)
+
+# f = Funcionario('Bartô Galeno', '111.222.333-44', 50000)
+# print(f.get_bonificacao())
+# print(f)
+# g = Gerente('Reginaldo Rossi', '777.222.333-88', 250000, 1234, 10)
+# print(g.get_bonificacao())
+# print(g)
+
+# controle = ControleDeBonificacoes()
+# controle.registra(f)
+# controle.registra(g)
+# print(f'Total = R$ {controle.total:.2f}')
+
+# cliente1 = Cliente("Elvis Presley", "111.222.333-44")
+# controle.registra(cliente1)
 
 
-#Aula 10/10 - Metodos estaticos, metodos de classe 
-#Herança 
-''''''
-#f = Funcionario('bartô galeno','123.456.789-00',50000)
-#f.hobby = 'Cantar'
-#print(f.Cantar)
+
+# Aula 10/10 - Métodos estáticos, métodos de classe
+# Herança e Reescrita de métodos
+
+f = Funcionario('Bartô Galeno', '111.222.333-44', 50000)
+print(f.get_bonificacao())
+print(f)
+g = Gerente('Reginaldo Rossi', '777.222.333-88', 250000, 1234, 10)
+print(g.get_bonificacao())
+print(g)
+
+#  cliente1 = Cliente("Elvis Presley", "111.222.333-44")
+# conta1 = Conta(cliente1, 1, 123, "elvis@gmail.com", 10000)
+# print(Conta.total_contas())
+# cliente2 = Cliente("Jonhny Cage", "222.333.444-55")
+# conta2 = Conta(cliente2, 2, 234, "jonhnny@outlook.com", 5000)
+# print(Conta.total_contas())
+
+# print(Conta.lista_contas()[0].saldo)
+# print(Conta.lista_contas()[1].saldo)
+
+# print(Conta.get_saldo_total())
+
+# print(Conta.total_contas_cm())
 
 
-#from functools import reduce
-
-#class Relatorio:
- #   def relatorio_contas():
-       # for conta in Conta._lista_contas:
-         #   print(conta)
-
-   # @staticmethod
- #   def get_saldo_total():
-     #   return reduce(lambda soma, conta: soma + conta.saldo, Conta._lista_contas, 0)
-#def relatorio_contas():
- #   for conta in Conta._lista_contas:
-  #      print(conta)
-
-#@staticmethod
-#def get_saldo_total():
-#    return reduce(lambda soma, conta: soma + conta.saldo, Conta._lista_contas, 0) 
-"""
 # Aula 26/09 - Agregação, Composição, Modificadores de Acesso
 cliente1 = Cliente("Elvis Presley", "111.222.333-44")
 conta1 = Conta(cliente1, 1, 123, "elvis@gmail.com", 10000)
@@ -77,10 +102,10 @@ print(conta1.saldo*1.1 + conta2.saldo*0.9)
 
 # Aula 19/09 - Orientação a Objetos
 
-"""
-#cliente1 = Cliente('Elvis Presley', '111.222.333-44')
-#conta1 = Conta(cliente1, 1, 123, 'elvis@gmail.com', 12345678)
-#conta1.extrato()
+
+cliente1 = Cliente('Elvis Presley', '111.222.333-44')
+conta1 = Conta(cliente1, 1, 123, 'elvis@gmail.com', 12345678)
+conta1.extrato()
 # conta1.deposita(100)
 # conta1.extrato()
 
@@ -95,20 +120,18 @@ print(conta1.saldo*1.1 + conta2.saldo*0.9)
 # else:
 #     print('Tá Liso')
 
-#cliente2 = Cliente('Jonhny Cage', '222.333.444-55')
-#conta2 = Conta(cliente2, 2, 234, 'jonhnny@outlook.com', 234567)
-#conta2.extrato()
+cliente2 = Cliente('Jonhny Cage', '222.333.444-55')
+conta2 = Conta(cliente2, 2, 234, 'jonhnny@outlook.com', 234567)
+conta2.extrato()
 
-#if(conta2.transfere(conta1, 1000)):
- #   print('OK')
-#else:
-  #  print('Tá liso')
+if(conta2.transfere(conta1, 1000)):
+    print('OK')
+else:
+    print('Tá liso')
 
 """
 
-
-
-
+"""
 # Aula 12/092023 - Listas e Funções Lambda
 frutas = ['Maçã', 'Banana', 'Laranja']
 print(frutas)
