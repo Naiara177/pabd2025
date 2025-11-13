@@ -1,13 +1,196 @@
-from empresa.config.database import SupabaseConnection
-from empresa.dao.funcionario_dao import FuncionarioDAO
+"""Exemplos de CRUD para `funcionario` e `departamento`.
 
-client = SupabaseConnection().client
+Este script tenta conectar ao Supabase usando `SupabaseConnection`.
+Se as variáveis de ambiente não estiverem configuradas, usa um cliente mock em memória
+para demonstração dos métodos CRUD via `BaseDAO`/DAOs específicos.
+"""
 
-# Criando DAO para acessar a tabela funcionario
-funcionario_dao = FuncionarioDAO(client)
+from datetime import datetime
+from typing import Any, Dict
+import os
+import sys
 
-for funcionario in funcionario_dao.read_all():
-  print(funcionario)
+# Ajusta sys.path para encontrar o package `empresa` dentro de `funcionario/ifrn`
+ROOT = os.path.dirname(__file__)
+PACKAGE_ROOT = os.path.join(ROOT, 'funcionario', 'ifrn')
+if PACKAGE_ROOT not in sys.path:
+    sys.path.insert(0, PACKAGE_ROOT)
+
+try:
+    from empresa.config.database import SupabaseConnection
+    from empresa.dao.funcionario_dao import FuncionarioDAO
+    from empresa.dao.departamento_dao import DepartamentoDAO
+    REAL_CLIENT = True
+except Exception:
+    # Se ocorrer erro ao importar (ex.: variáveis de ambiente ausentes), usaremos mock
+    REAL_CLIENT = False
+
+
+class _MockResponse:
+    def __init__(self, data=None, status_code=200):
+        self.data = data
+        self.status_code = status_code
+
+
+class _MockTable:
+    def __init__(self, client: 'MockClient', name: str):
+        self.client = client
+        self.name = name
+        self._operation = None
+        self._payload = None
+        self._eq_field = None
+        self._eq_value = None
+
+    def select(self, *args, **kwargs):
+        self._operation = 'select'
+        return self
+
+    def insert(self, payload: Dict[str, Any]):
+        self._operation = 'insert'
+        self._payload = payload
+        return self
+
+    def update(self, payload: Dict[str, Any]):
+        self._operation = 'update'
+        self._payload = payload
+        return self
+
+    def delete(self):
+        self._operation = 'delete'
+        return self
+
+    def eq(self, field: str, value: Any):
+        self._eq_field = field
+        self._eq_value = value
+        return self
+
+    def execute(self):
+        store = self.client._store.setdefault(self.name, [])
+        if self._operation == 'select':
+            # retorna todos os registros
+            return _MockResponse(list(store))
+
+        if self._operation == 'insert':
+            item = dict(self._payload)
+            # atribui id incremental quando aplicável (numero) ou mantém cpf
+            if 'numero' in item and not item.get('numero'):
+                # next number
+                next_num = (max((r.get('numero') or 0) for r in store) + 1) if store else 1
+                item['numero'] = next_num
+            store.append(item)
+            return _MockResponse([item], 201)
+
+        if self._operation == 'update':
+            updated = []
+            for idx, r in enumerate(store):
+                if self._eq_field and r.get(self._eq_field) == self._eq_value:
+                    new = dict(r)
+                    new.update(self._payload)
+                    store[idx] = new
+                    updated.append(new)
+            return _MockResponse(updated)
+
+        if self._operation == 'delete':
+            removed = []
+            new_store = []
+            for r in store:
+                if self._eq_field and r.get(self._eq_field) == self._eq_value:
+                    removed.append(r)
+                else:
+                    new_store.append(r)
+            self.client._store[self.name] = new_store
+            return _MockResponse(removed)
+
+
+class MockClient:
+    def __init__(self):
+        self._store = {}
+
+    def table(self, name: str) -> _MockTable:
+        return _MockTable(self, name)
+
+
+def _print_section(title: str):
+    print('\n' + '=' * 10 + ' ' + title + ' ' + '=' * 10)
+
+
+def main():
+    # obter client real ou mock
+    if REAL_CLIENT:
+        client = SupabaseConnection().client
+        # testar se a conexão é realmente utilizável; se houver erro (ex: chave inválida), usar mock
+        try:
+            probe = client.table('departamento').select('*').execute()
+            # se responder com status_code 401/403 ou payload de erro, considere inválido
+            bad_status = getattr(probe, 'status_code', None) in (401, 403)
+            bad_data = isinstance(getattr(probe, 'data', None), dict) and probe.data.get('code') in (401, 403)
+            if bad_status or bad_data:
+                raise Exception('Supabase probe retornou erro')
+            print('Usando Supabase real (variáveis de ambiente detectadas)')
+        except Exception:
+            print('Aviso: não foi possível usar Supabase real — usando mock para demonstração')
+            client = MockClient()
+    else:
+        client = MockClient()
+        print('Usando cliente mock (modo demonstração)')
+
+    # importar DAOs (evita erro caso import anterior falhe)
+    from empresa.dao.departamento_dao import DepartamentoDAO
+    from empresa.dao.funcionario_dao import FuncionarioDAO
+
+    dep_dao = DepartamentoDAO(client)
+    func_dao = FuncionarioDAO(client)
+
+    # --- Create ---
+    _print_section('CREATE')
+    from empresa.models.departamento import Departamento
+    from empresa.models.funcionario import Funcionario
+
+    novo_dep = Departamento(numero=None, nome='Engenharia', localizacao='Bloco A')
+    criado_dep = dep_dao.create(novo_dep)
+    print('Departamento criado:', criado_dep)
+
+    novo_func = Funcionario(cpf='12345678900', pnome='Ana', unome='Silva', numero_departamento=criado_dep.numero if criado_dep else None)
+    criado_func = func_dao.create(novo_func)
+    print('Funcionario criado:', criado_func)
+
+    # --- Read ---
+    _print_section('READ ALL')
+    deps = dep_dao.read_all()
+    funcs = func_dao.read_all()
+    print('Departamentos:', deps)
+    print('Funcionarios:', funcs)
+
+    # --- Update ---
+    _print_section('UPDATE')
+    if deps:
+        first = deps[0]
+        # alterar nome
+        first.nome = first.nome + ' (Atualizado)'
+        updated = dep_dao.update(first.numero, first, id_field='numero')
+        print('Departamento atualizado:', updated)
+
+    if funcs:
+        f = funcs[0]
+        f.pnome = f.pnome + ' Maria'
+        updated_f = func_dao.update(f.cpf, f, id_field='cpf')
+        print('Funcionario atualizado:', updated_f)
+
+    # --- Delete ---
+    _print_section('DELETE')
+    if funcs:
+        cpf = funcs[0].cpf
+        ok = func_dao.delete(cpf, id_field='cpf')
+        print(f'Delete funcionario {cpf}:', ok)
+
+    if deps:
+        num = deps[0].numero
+        ok2 = dep_dao.delete(num, id_field='numero')
+        print(f'Delete departamento {num}:', ok2)
+
+
+if __name__ == '__main__':
+    main()
 
 """
 from conta import Conta
